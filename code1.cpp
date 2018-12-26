@@ -21,7 +21,7 @@ namespace playerTwo {
 
     const char _DAYE[4] = {-1, 1, 0, 0};
     const char _DJAY[4] = {0, 0, -1, 1};
-    const int MAXDEPTH = 6;
+    const int MAXDEPTH = 5;
     const int DISLIKE = 123456;
     const int NOWAY = 654321;
     bool maxRecorded = false;
@@ -35,8 +35,8 @@ namespace playerTwo {
         char record[5][6];
         char max[5][6];
         Color color[5][6];
-        char streakID[5][6] = {0};
-        char streakCount[15] = {0};
+        char streakID[5][6];
+        char streakCount[15];
         Color ratingColor;
         Color placingColor;
         bool rated;
@@ -143,6 +143,8 @@ namespace playerTwo {
                 color[4][4] = c[4][4];
                 color[4][5] = c[4][5];
             }
+            memset(streakID, 0, sizeof(char)*30);
+            memset(streakCount, 0, sizeof(char)*15);
             ratingColor = rc;
             placingColor = pc;
             rated = false;
@@ -267,7 +269,7 @@ namespace playerTwo {
             if (color[x][y] == (placingColor == Blue ? Red : Blue)) {
                 log("\n///////////////////////////////////////////////\n");
                 log("[ERROR]  Wrong color!  placing %c @ %d, %d\n", "WBRX"[placingColor], x, y);
-                PrintAll();
+                //PrintAll();
                 log("///////////////////////////////////////////////\n\n");
                 exit(1);
             }
@@ -318,7 +320,27 @@ namespace playerTwo {
 
             //log("Placed %c @ %d, %d\n\n", "WBRX"[placingColor], x, y);
         }
+        int Rating() {
+            for (int aye = 0; aye < 5; aye++) {
+                for (int jay = 0; jay < 6; jay++) {
+                    int value = 0;
+                    if (color[aye][jay] != Black && color[aye][jay] != White) {
+                        if (record[aye][jay] + 1 >= max[aye][jay]) {
+                            value += max[aye][jay] * 4;
+                        } else {
+                            value += record[aye][jay];
+                        }
 
+                        if (color[aye][jay] == ratingColor) {
+                            rating += value;
+                        } else {
+                            rating -= value;
+                        }
+                    }
+                }
+            }
+        }
+        /*
         int Rating() {
             if (rated) {
                 return rating;
@@ -377,6 +399,7 @@ namespace playerTwo {
                 return rating;
             }
         }
+        */
 
         inline bool IsValidPos(int x, int y) {
             return x >= 0 && x <= 4 && y >= 0 && y <= 5;
@@ -637,6 +660,7 @@ namespace playerTwo {
         int _rating;
 
     };
+
 };
 
 class GameHandler
@@ -646,6 +670,8 @@ public:
         using namespace playerTwo;
         for (int aye = 0; aye < 5; aye++) {
             for (int jay = 0; jay < 6; jay++) {
+                record[aye][jay] = 0;
+                color[aye][jay] = White;
                 if (aye == 0 || aye == 4) {
                     if (jay == 0 || jay == 5) {
                         max[aye][jay] = 2;
@@ -711,9 +737,9 @@ public:
 
 
 private:
-    int record[5][6] = {0};
+    int record[5][6];
     int max[5][6];
-    Color color[5][6] = {White};
+    Color color[5][6];
     int t = 0;
     playerTwo::GameState* gs;
 
@@ -819,7 +845,6 @@ int main(void) {
 
     return 0;
 }
-
 
 
 
