@@ -5,7 +5,7 @@
 
     const char _DAYE[4] = {-1, 1, 0, 0};
     const char _DJAY[4] = {0, 0, -1, 1};
-    const int MAXDEPTH = 3;
+    const int MAXDEPTH = 5;
     const int DISLIKE = 123456;
     const int NOWAY = 654321;
     bool maxRecorded = false;
@@ -16,21 +16,21 @@
 
     struct GameState
     {
-        char record[5][6];
-        char max[5][6];
+        int record[5][6];
+        int max[5][6];
         Color color[5][6];
         char streakID[5][6];
         char streakCount[15];
+        char streakCursor = 1;
         Color ratingColor;
         Color placingColor;
         bool rated;
         short rating;
         bool won;
         bool noCritEnemy = true;
-        char streakCursor = 1;
+        Pick pick;
 
-
-        GameState(int r[5][6], int m[5][6], Color c[5][6], Color rc, Color pc) {
+        GameState(int r[5][6], int m[5][6], Color c[5][6], Color rc, Color pc, Pick p) {
             { // record
                 record[0][0] = r[0][0];
                 record[0][1] = r[0][1];
@@ -127,14 +127,13 @@
                 color[4][4] = c[4][4];
                 color[4][5] = c[4][5];
             }
-            memset(streakID, 0, sizeof(char)*30);
-            memset(streakCount, 0, sizeof(char)*15);
             ratingColor = rc;
             placingColor = pc;
             rated = false;
             rating = 0;
+            pick = p;
         }
-        GameState(GameState*& gs, bool changePC) {
+        GameState(GameState*& gs, bool changePC, Pick p) {
             { // record
                 record[0][0] = gs->record[0][0];
                 record[0][1] = gs->record[0][1];
@@ -236,13 +235,14 @@
             placingColor = !changePC ? gs->placingColor : oppoColor((Color)gs->placingColor);
             rated = false;
             rating = 0;
+            pick = p;
         }
 
         inline void ChangePlacingColor() {
             if (placingColor == Blue) placingColor = Red;
             else if (placingColor == Red) placingColor = Blue;
             else {
-                //printf("[ERROR]  Changing color of cell other than blue or red\n");
+                printf("[ERROR]  Changing color of cell other than blue or red\n");
             }
         }
 
@@ -305,8 +305,9 @@
             ////log("Placed %c @ %d, %d\n\n", "WBRX"[placingColor], x, y);
         }
         int Rating() {
-            return Ver1_r();
+            return Ver2_r();
             /*
+            return Ver1_r();
             return Naive_r();
             return Standard_r()
             */
@@ -368,24 +369,124 @@
             return rating;
         }
 
+        int Ver2_r() {
+            rating = 0;
+            Color tmpColor = oppoColor(placingColor);
+            GameState* tmpGS;
+            bool atLeast1Crit = false;
+            int bestRating = (pick == _MAX ? -99999 : 99999);
+            int tmpRating;
+            int TLE_cnt = 0;
+            for (int aye = 0; aye < 5; aye++) {
+                for (int jay = 0; jay < 6; jay++) {
+                    if (color[aye][jay] == tmpColor) {
+                        if (record[aye][jay] + 1 >= max[aye][jay]) {
+                            atLeast1Crit = true;
+                            TLE_cnt ++;
+                            tmpGS = new GameState(record, max, color, ratingColor, oppoColor(placingColor), oppoPick(pick));
+                            tmpGS->PlaceOrb(aye, jay);
+                            tmpRating = tmpGS->Ver1_r();
+                            delete tmpGS;
+
+                            if (pick == _MAX) {
+                                if (tmpRating > bestRating) {
+                                    bestRating = tmpRating;
+                                }
+                            } else {
+                                if (tmpRating < bestRating) {
+                                    bestRating = tmpRating;
+                                }
+                            }
+                        }
+                    }
+                    if (TLE_cnt > 0) break;
+                }
+                if (TLE_cnt > 0) break;
+            }
+            if (atLeast1Crit) {
+                return bestRating;
+            } else {
+                return Ver1_r();
+            }
+        }
+
+        int Standard_r() {
+            if (rated) {
+                return rating;
+            } else {
+                won = true;
+                rated = true;
+                rating = 0;
+
+                for (int aye = 0; aye < 5; aye++) {
+                    for (int jay = 0; jay < 6; jay++) {
+
+                        if (color[aye][jay] == ratingColor) {
+                            for (int i = 0; i < 4; i++) {
+                                if (IsValidPos(aye + _DAYE[i], jay + _DJAY[i])) {
+                                    if (record[aye + _DAYE[i]][jay + _DJAY[i]] + 1 >= max[aye + _DAYE[i]][jay + _DJAY[i]]) {
+                                        if (color[aye + _DAYE[i]][jay + _DJAY[i]] == oppoColor(ratingColor)) {
+                                            rating -= (5 - max[aye + _DAYE[i]][jay + _DJAY[i]]) * record[aye][jay];
+                                            noCritEnemy = false;
+                                        } else {
+                                            if (record[aye][jay] + 1 >= max[aye][jay]) {
+                                                if (streakID[aye][jay] == 0) {
+                                                    streakID[aye][jay] = streakCursor++;
+                                                    streakCount[streakID[aye][jay]] ++;
+                                                }
+                                                if (streakID[aye + _DAYE[i]][jay + _DJAY[i]] == 0) {
+                                                    streakID[aye + _DAYE[i]][jay + _DJAY[i]] = streakID[aye][jay];
+                                                    streakCount[streakID[aye][jay]] ++;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            if (noCritEnemy) {
+                                if (max[aye][jay] != 4) {
+                                    rating += (4 - max[aye][jay]) * record[aye][jay];
+                                }
+
+                                if (record[aye][jay] + 1 >= max[aye][jay]) {
+                                    rating += 2;
+                                }
+                            }
+                            rating += record[aye][jay];
+                            for (int i = 1; i < streakCursor; i++) {
+                                rating += streakCount[i] * 2;
+                            }
+                        } else if (color[aye][jay] == oppoColor(ratingColor)) {
+                            won = false;
+                        }
+                    }
+                }
+
+                if (won) {
+                    return 10000;
+                }
+                return rating;
+            }
+        }
+
 
         inline bool IsValidPos(int x, int y) {
             return x >= 0 && x <= 4 && y >= 0 && y <= 5;
         }
 
         void PrintAll() {
-            //printf("All:\tplacing: %c, rating: %c\n", "WBRX"[placingColor], "WBRX"[ratingColor]);
+            printf("All:\tplacing: %c, rating: %c\n", "WBRX"[placingColor], "WBRX"[ratingColor]);
             for (int aye = 0; aye < 5; aye++) {
                 for (int jay = 0; jay < 6; jay++) {
                     if (color[aye][jay] == White || color[aye][jay] == Black) {
-                        //printf("%c   ", "wbrX"[color[aye][jay]]);
+                        printf("%c   ", "wbrX"[color[aye][jay]]);
                     } else {
-                        //printf("%c%d  ", "wbrX"[color[aye][jay]], record[aye][jay]);
+                        printf("%c%d  ", "wbrX"[color[aye][jay]], record[aye][jay]);
                     }
                 }
-                //printf("\n");
+                printf("\n");
             }
-            ////printf("\n");
+            //printf("\n");
         }
     };
 
@@ -400,10 +501,10 @@
     struct Node
     {
         Node(Pick p, int d, int par_fav, int r[5][6], int m[5][6], Color c[5][6], Color rc, Color pc) :
-            pick(p), base(new GameState(r,m,c,rc,pc)), parent_fav_rating(par_fav), depth(d) {
+            pick(p), base(new GameState(r,m,c,rc,pc,p)), parent_fav_rating(par_fav), depth(d) {
             fav_rating = (p == _MAX) ? -99999 : 99999;
         }
-        Node(Pick p, int d, int par_fav, GameState* b) : pick(p), base(new GameState(b, true)), parent_fav_rating(par_fav), depth(d) {
+        Node(Pick p, int d, int par_fav, GameState* b) : pick(p), base(new GameState(b, true, p)), parent_fav_rating(par_fav), depth(d) {
             fav_rating = (p == _MAX) ? -99999 : 99999;
         }
         ~Node() {
@@ -517,12 +618,11 @@
     class Student{
     public:
         void makeMove(int record[5][6], int max[5][6], Color color[5][6], Color inputColor){
-            global_move ++;
             int fav_rating = -99999;
             int fav_x, fav_y;
             int tmpRating;
             Node* tmpNode;
-            GameState dbGS(record, max, color, inputColor, inputColor);
+            GameState dbGS(record, max, color, inputColor, inputColor, _MAX);
 
             //log("Making move...  Starting state:\n");
             DBPA(dbGS);
@@ -571,7 +671,3 @@
 
     };
 
-
-int main(void) {
-return 0;
-}

@@ -394,12 +394,13 @@ namespace playerTwo {
             bool atLeast1Crit = false;
             int bestRating = (pick == _MAX ? -99999 : 99999);
             int tmpRating;
+            int TLE_cnt = 0;
             for (int aye = 0; aye < 5; aye++) {
                 for (int jay = 0; jay < 6; jay++) {
                     if (color[aye][jay] == tmpColor) {
                         if (record[aye][jay] + 1 >= max[aye][jay]) {
                             atLeast1Crit = true;
-
+                            TLE_cnt ++;
                             tmpGS = new GameState(record, max, color, ratingColor, oppoColor(placingColor), oppoPick(pick));
                             tmpGS->PlaceOrb(aye, jay);
                             tmpRating = tmpGS->Ver1_r();
@@ -416,7 +417,9 @@ namespace playerTwo {
                             }
                         }
                     }
+                    if (TLE_cnt > 10) break;
                 }
+                if (TLE_cnt > 10) break;
             }
             if (atLeast1Crit) {
                 return bestRating;
