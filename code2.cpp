@@ -23,7 +23,7 @@ namespace playerTwo {
 
     const char _DAYE[4] = {-1, 1, 0, 0};
     const char _DJAY[4] = {0, 0, -1, 1};
-    const int MAXDEPTH = 3;
+    const int MAXDEPTH = 5;
     const int DISLIKE = 123456;
     const int NOWAY = 654321;
     bool maxRecorded = false;
@@ -34,21 +34,21 @@ namespace playerTwo {
 
     struct GameState
     {
-        char record[5][6];
-        char max[5][6];
+        int record[5][6];
+        int max[5][6];
         Color color[5][6];
         char streakID[5][6];
         char streakCount[15];
+        char streakCursor = 1;
         Color ratingColor;
         Color placingColor;
         bool rated;
         short rating;
         bool won;
         bool noCritEnemy = true;
-        char streakCursor = 1;
+        Pick pick;
 
-
-        GameState(int r[5][6], int m[5][6], Color c[5][6], Color rc, Color pc) {
+        GameState(int r[5][6], int m[5][6], Color c[5][6], Color rc, Color pc, Pick p) {
             { // record
                 record[0][0] = r[0][0];
                 record[0][1] = r[0][1];
@@ -145,14 +145,13 @@ namespace playerTwo {
                 color[4][4] = c[4][4];
                 color[4][5] = c[4][5];
             }
-            memset(streakID, 0, sizeof(char)*30);
-            memset(streakCount, 0, sizeof(char)*15);
             ratingColor = rc;
             placingColor = pc;
             rated = false;
             rating = 0;
+            pick = p;
         }
-        GameState(GameState*& gs, bool changePC) {
+        GameState(GameState*& gs, bool changePC, Pick p) {
             { // record
                 record[0][0] = gs->record[0][0];
                 record[0][1] = gs->record[0][1];
@@ -254,6 +253,7 @@ namespace playerTwo {
             placingColor = !changePC ? gs->placingColor : oppoColor((Color)gs->placingColor);
             rated = false;
             rating = 0;
+            pick = p;
         }
 
         inline void ChangePlacingColor() {
@@ -323,8 +323,9 @@ namespace playerTwo {
             //log("Placed %c @ %d, %d\n\n", "WBRX"[placingColor], x, y);
         }
         int Rating() {
-            return Ver1_r();
+            return Ver2_r();
             /*
+            return Ver1_r();
             return Naive_r();
             return Standard_r()
             */
@@ -386,7 +387,44 @@ namespace playerTwo {
             return rating;
         }
 
-        /*
+        int Ver2_r() {
+            rating = 0;
+            Color tmpColor = oppoColor(placingColor);
+            GameState* tmpGS;
+            bool atLeast1Crit = false;
+            int bestRating = (pick == _MAX ? -99999 : 99999);
+            int tmpRating;
+            for (int aye = 0; aye < 5; aye++) {
+                for (int jay = 0; jay < 6; jay++) {
+                    if (color[aye][jay] == tmpColor) {
+                        if (record[aye][jay] + 1 >= max[aye][jay]) {
+                            atLeast1Crit = true;
+
+                            tmpGS = new GameState(record, max, color, ratingColor, oppoColor(placingColor), oppoPick(pick));
+                            tmpGS->PlaceOrb(aye, jay);
+                            tmpRating = tmpGS->Ver1_r();
+                            delete tmpGS;
+
+                            if (pick == _MAX) {
+                                if (tmpRating > bestRating) {
+                                    bestRating = tmpRating;
+                                }
+                            } else {
+                                if (tmpRating < bestRating) {
+                                    bestRating = tmpRating;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (atLeast1Crit) {
+                return bestRating;
+            } else {
+                return Ver1_r();
+            }
+        }
+
         int Standard_r() {
             if (rated) {
                 return rating;
@@ -445,7 +483,7 @@ namespace playerTwo {
                 return rating;
             }
         }
-        */
+
 
         inline bool IsValidPos(int x, int y) {
             return x >= 0 && x <= 4 && y >= 0 && y <= 5;
@@ -478,10 +516,10 @@ namespace playerTwo {
     struct Node
     {
         Node(Pick p, int d, int par_fav, int r[5][6], int m[5][6], Color c[5][6], Color rc, Color pc) :
-            pick(p), base(new GameState(r,m,c,rc,pc)), parent_fav_rating(par_fav), depth(d) {
+            pick(p), base(new GameState(r,m,c,rc,pc,p)), parent_fav_rating(par_fav), depth(d) {
             fav_rating = (p == _MAX) ? -99999 : 99999;
         }
-        Node(Pick p, int d, int par_fav, GameState* b) : pick(p), base(new GameState(b, true)), parent_fav_rating(par_fav), depth(d) {
+        Node(Pick p, int d, int par_fav, GameState* b) : pick(p), base(new GameState(b, true, p)), parent_fav_rating(par_fav), depth(d) {
             fav_rating = (p == _MAX) ? -99999 : 99999;
         }
         ~Node() {
@@ -595,12 +633,11 @@ namespace playerTwo {
     class Student{
     public:
         void makeMove(int record[5][6], int max[5][6], Color color[5][6], Color inputColor){
-            global_move ++;
             int fav_rating = -99999;
             int fav_x, fav_y;
             int tmpRating;
             Node* tmpNode;
-            GameState dbGS(record, max, color, inputColor, inputColor);
+            GameState dbGS(record, max, color, inputColor, inputColor, _MAX);
 
             log("Making move...  Starting state:\n");
             DBPA(dbGS);
@@ -673,7 +710,7 @@ public:
                 }
             }
         }
-        gs = new GameState(record, max, color, Blue, Blue);
+        gs = new GameState(record, max, color, Blue, Blue, _MAX);
         curr_color = Blue;
     }
 
