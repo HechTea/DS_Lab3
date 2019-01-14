@@ -246,8 +246,16 @@
             }
         }
 
-        void LabelCell(int x, int y) {
-
+        void LabelCell(int aye, int jay) {
+            streakID[aye][jay] = streakCursor;
+            streakCount[streakCursor]++;
+            for (int i=0; i<4; i++) {
+                if (IsValidPos(aye + _DAYE[i], jay + _DJAY[i])) {
+                    if (record[aye + _DAYE[i]][jay + _DJAY[i]] + 1 > max[aye + _DAYE[i]][jay + _DJAY[i]]) {
+                        LabelCell(aye + _DAYE[i], jay + _DJAY[i]);
+                    }
+                }
+            }
         }
 
         void PlaceOrb(int x, int y) {
@@ -309,9 +317,9 @@
             ////log("Placed %c @ %d, %d\n\n", "WBRX"[placingColor], x, y);
         }
         int Rating() {
-            return Ver3_r();
-            /*
             return Ver2_r();
+            /*
+            return Ver3_r();
             return Ver1_r();
             return Naive_r();
             return Standard_r()
@@ -404,9 +412,9 @@
                             }
                         }
                     }
-                    if (TLE_cnt > 10) break;
+                    if (TLE_cnt > 1) break;
                 }
-                if (TLE_cnt > 10) break;
+                if (TLE_cnt > 1) break;
             }
             if (atLeast1Crit) {
                 return bestRating;
@@ -457,19 +465,10 @@
                             tmpRating = tmpGS->Ver1_r();
                             delete tmpGS;
 
-                            if (pick == _MAX) {
-                                if (tmpRating > bestRating) {
-                                    bestRating = tmpRating;
-                                }
-                            } else {
-                                if (tmpRating < bestRating) {
-                                    bestRating = tmpRating;
-                                }
-                            }
+                            return bestRating;
                         }
                     }
                 }
-
             } else {
                 return Ver1_r();
             }

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define log printf
+#define log //printf
 
 using namespace std;
 
@@ -17,6 +17,8 @@ enum Color{
 int global_move = 0;
 
 namespace playerTwo {
+
+
     enum Pick {_MAX, _MIN};
 
     enum Dir {UP, DOWN, LEFT, RIGHT};
@@ -260,12 +262,20 @@ namespace playerTwo {
             if (placingColor == Blue) placingColor = Red;
             else if (placingColor == Red) placingColor = Blue;
             else {
-                printf("[ERROR]  Changing color of cell other than blue or red\n");
+                //printf("[ERROR]  Changing color of cell other than blue or red\n");
             }
         }
 
-        void LabelCell(int x, int y) {
-
+        void LabelCell(int aye, int jay) {
+            streakID[aye][jay] = streakCursor;
+            streakCount[streakCursor]++;
+            for (int i=0; i<4; i++) {
+                if (IsValidPos(aye + _DAYE[i], jay + _DJAY[i])) {
+                    if (record[aye + _DAYE[i]][jay + _DJAY[i]] + 1 > max[aye + _DAYE[i]][jay + _DJAY[i]]) {
+                        LabelCell(aye + _DAYE[i], jay + _DJAY[i]);
+                    }
+                }
+            }
         }
 
         void PlaceOrb(int x, int y) {
@@ -273,10 +283,10 @@ namespace playerTwo {
             rating = 0;
 
             if (color[x][y] == (placingColor == Blue ? Red : Blue)) {
-                log("\n///////////////////////////////////////////////\n");
-                log("[ERROR]  Wrong color!  placing %c @ %d, %d\n", "WBRX"[placingColor], x, y);
+                //log("\n///////////////////////////////////////////////\n");
+                //log("[ERROR]  Wrong color!  placing %c @ %d, %d\n", "WBRX"[placingColor], x, y);
                 //PrintAll();
-                log("///////////////////////////////////////////////\n\n");
+                //log("///////////////////////////////////////////////\n\n");
                 exit(1);
             }
 
@@ -324,12 +334,12 @@ namespace playerTwo {
                 }
             }
 
-            //log("Placed %c @ %d, %d\n\n", "WBRX"[placingColor], x, y);
+            ////log("Placed %c @ %d, %d\n\n", "WBRX"[placingColor], x, y);
         }
         int Rating() {
-            return Ver3_r();
-            /*
             return Ver2_r();
+            /*
+            return Ver3_r();
             return Ver1_r();
             return Naive_r();
             return Standard_r()
@@ -422,9 +432,9 @@ namespace playerTwo {
                             }
                         }
                     }
-                    if (TLE_cnt > 10) break;
+                    if (TLE_cnt > 1) break;
                 }
-                if (TLE_cnt > 10) break;
+                if (TLE_cnt > 1) break;
             }
             if (atLeast1Crit) {
                 return bestRating;
@@ -444,52 +454,43 @@ namespace playerTwo {
             for (int aye = 0; aye < 5; aye++) {
                 for (int jay = 0; jay < 6; jay++) {
                     if (color[aye][jay] == tmpColor) {
-                    	if (record[aye][jay] + 1 >= max[aye][jay]){
-							atLeast1Crit = true;
-							if (streakID[aye][jay] == 0) {
-								LabelCell(aye, jay);
-								streakCursor++;
-							}
-						}
+                        if (record[aye][jay] + 1 >= max[aye][jay]){
+                            atLeast1Crit = true;
+                            if (streakID[aye][jay] == 0) {
+                                LabelCell(aye, jay);
+                                streakCursor++;
+                            }
+                        }
                     }
                 }
             }
 
             if (streakCursor > 1) {
-            	int maxid = 1;
-            	int maxcount = 1;
-            	
+                int maxid = 1;
+                int maxcount = 1;
+                
 
-            	for (int i = 1; i < streakCursor; i++) {
-            		if (streakCount[i] > maxcount) {
-            			maxcount = streakCount[i];
-            			maxid = i;
-            		}
-            	}
+                for (int i = 1; i < streakCursor; i++) {
+                    if (streakCount[i] > maxcount) {
+                        maxcount = streakCount[i];
+                        maxid = i;
+                    }
+                }
 
-	            for (int aye = 0; aye < 5; aye++) {
-	                for (int jay = 0; jay < 6; jay++) {
-	                    if (streakID[aye][jay] == maxid) {
-	                    	tmpGS = new GameState(record, max, color, ratingColor, oppoColor(placingColor), oppoPick(pick));
-	                    	tmpGS->PlaceOrb(aye, jay);
+                for (int aye = 0; aye < 5; aye++) {
+                    for (int jay = 0; jay < 6; jay++) {
+                        if (streakID[aye][jay] == maxid) {
+                            tmpGS = new GameState(record, max, color, ratingColor, oppoColor(placingColor), oppoPick(pick));
+                            tmpGS->PlaceOrb(aye, jay);
                             tmpRating = tmpGS->Ver1_r();
                             delete tmpGS;
 
-                            if (pick == _MAX) {
-                                if (tmpRating > bestRating) {
-                                    bestRating = tmpRating;
-                                }
-                            } else {
-                                if (tmpRating < bestRating) {
-                                    bestRating = tmpRating;
-                                }
-                            }
-	                    }
-	                }
-	            }
-
+                            return bestRating;
+                        }
+                    }
+                }
             } else {
-            	return Ver1_r();
+                return Ver1_r();
             }
 
         }
@@ -559,18 +560,18 @@ namespace playerTwo {
         }
 
         void PrintAll() {
-            printf("All:\tplacing: %c, rating: %c\n", "WBRX"[placingColor], "WBRX"[ratingColor]);
+            //printf("All:\tplacing: %c, rating: %c\n", "WBRX"[placingColor], "WBRX"[ratingColor]);
             for (int aye = 0; aye < 5; aye++) {
                 for (int jay = 0; jay < 6; jay++) {
                     if (color[aye][jay] == White || color[aye][jay] == Black) {
-                        printf("%c   ", "wbrX"[color[aye][jay]]);
+                        //printf("%c   ", "wbrX"[color[aye][jay]]);
                     } else {
-                        printf("%c%d  ", "wbrX"[color[aye][jay]], record[aye][jay]);
+                        //printf("%c%d  ", "wbrX"[color[aye][jay]], record[aye][jay]);
                     }
                 }
-                printf("\n");
+                //printf("\n");
             }
-            //printf("\n");
+            ////printf("\n");
         }
     };
 
@@ -597,7 +598,7 @@ namespace playerTwo {
 
 
         int GetBestRating() {
-            log("Getting best rating of...\n");
+            //log("Getting best rating of...\n");
             DBPA(base);
             if (depth >= MAXDEPTH) {
                 return base->Rating();
@@ -609,53 +610,53 @@ namespace playerTwo {
                         continue;
                     }
                     atLeast1Way = true;
-                    log("@Depth %d, Can be placed @ %d %d\n", depth, curr_x, curr_y);
+                    //log("@Depth %d, Can be placed @ %d %d\n", depth, curr_x, curr_y);
                     tmpNode = new Node(oppoPick(pick), depth+1, fav_rating, base);
                     tmpNode->PlaceOrb(curr_x, curr_y);
                     tmpRating = tmpNode->GetBestRating();
                     DBPA(tmpNode->base);
-                    log("\tRating = %d\n", tmpRating);
+                    //log("\tRating = %d\n", tmpRating);
 
                     delete tmpNode;
 
                     if (tmpRating == DISLIKE) {
                     // if the node produces unfavorable rating, do nothing, check next pos.
-                        log("Ahh...  A more favorable rating for depth %d appeared(%d), but we @ depth %d do not want that, do we?\n", depth+1, tmpRating, depth);
+                        //log("Ahh...  A more favorable rating for depth %d appeared(%d), but we @ depth %d do not want that, do we?\n", depth+1, tmpRating, depth);
                     } else if (tmpRating == NOWAY) {
                     // Guess we won?
-                        log("Guess @ depth %d it managed to eliminate all enemy...  ", depth);
+                        //log("Guess @ depth %d it managed to eliminate all enemy...  ", depth);
                         if (pick == _MAX) {
-                            log("return rating: 10000\n");
+                            //log("return rating: 10000\n");
                             return 10000;
                         } else {
-                            log("return rating: -10000\n");
+                            //log("return rating: -10000\n");
                             return -10000;
                         }
                     } else {
                     // else tmpRating may hold better rating.
                         if (pick == _MAX) {
                             if (tmpRating > parent_fav_rating) {
-                                log("[SKIP]  picking MAX @ depth %d, parent_fav_rating: %d, found rating:%d @ %d %d.\n", depth, parent_fav_rating, tmpRating, curr_x, curr_y);
+                                //log("[SKIP]  picking MAX @ depth %d, parent_fav_rating: %d, found rating:%d @ %d %d.\n", depth, parent_fav_rating, tmpRating, curr_x, curr_y);
                                 return DISLIKE;
                             }
 
                             if (tmpRating > fav_rating) {
-                                log("Noice.  best so far was %d.\n", fav_rating);
+                                //log("Noice.  best so far was %d.\n", fav_rating);
                                 fav_rating = tmpRating;
                             } else {
-                                log("\tNot better than %d, HIGHER!\n", fav_rating);
+                                //log("\tNot better than %d, HIGHER!\n", fav_rating);
                             }
                         } else { // if (pick == _MIN)
                             if (tmpRating < parent_fav_rating) {
-                                log("[SKIP]  picking MIN @ depth %d, parent_fav_rating: %d, found rating:%d @ %d %d.\n", depth, parent_fav_rating, tmpRating, curr_x, curr_y);
+                                //log("[SKIP]  picking MIN @ depth %d, parent_fav_rating: %d, found rating:%d @ %d %d.\n", depth, parent_fav_rating, tmpRating, curr_x, curr_y);
                                 return DISLIKE;
                             }
 
                             if (tmpRating < fav_rating) {
-                                log("Noice.  best so far was %d.\n", fav_rating);
+                                //log("Noice.  best so far was %d.\n", fav_rating);
                                 fav_rating = tmpRating;
                             } else {
-                                log("\tNot better than %d, LOWER!\n", fav_rating);
+                                //log("\tNot better than %d, LOWER!\n", fav_rating);
                             }
                         }
                     }
@@ -708,20 +709,20 @@ namespace playerTwo {
             Node* tmpNode;
             GameState dbGS(record, max, color, inputColor, inputColor, _MAX);
 
-            log("Making move...  Starting state:\n");
+            //log("Making move...  Starting state:\n");
             DBPA(dbGS);
-            log("\n");
+            //log("\n");
 
             for (int aye = 0; aye < 5; aye++) {
                 for (int jay = 0; jay < 6; jay++) {
                     if (color[aye][jay] == inputColor || color[aye][jay] == White) {
                         tmpNode = new Node(_MIN, 2, fav_rating, record, max, color, inputColor, inputColor);
-                        log("Can place %c @ %d %d:\n", "WBRX"[inputColor], aye, jay);
+                        //log("Can place %c @ %d %d:\n", "WBRX"[inputColor], aye, jay);
                         tmpNode->PlaceOrb(aye, jay);
                         DBPA(tmpNode->base);
                         tmpRating = tmpNode->GetBestRating();
 
-                        log("\t@%2d, %2d  Rating: %d\n", aye, jay, tmpRating);
+                        //log("\t@%2d, %2d  Rating: %d\n", aye, jay, tmpRating);
 
                         delete tmpNode;
                         if (tmpRating == DISLIKE) {
@@ -754,6 +755,7 @@ namespace playerTwo {
         int _rating;
 
     };
+
 
 };
 
