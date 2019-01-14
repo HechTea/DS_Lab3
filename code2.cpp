@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define log //printf
+#define log printf
 
 using namespace std;
 
@@ -264,6 +264,10 @@ namespace playerTwo {
             }
         }
 
+        void LabelCell(int x, int y) {
+
+        }
+
         void PlaceOrb(int x, int y) {
             rated = false;
             rating = 0;
@@ -323,8 +327,9 @@ namespace playerTwo {
             //log("Placed %c @ %d, %d\n\n", "WBRX"[placingColor], x, y);
         }
         int Rating() {
-            return Ver2_r();
+            return Ver3_r();
             /*
+            return Ver2_r();
             return Ver1_r();
             return Naive_r();
             return Standard_r()
@@ -426,6 +431,67 @@ namespace playerTwo {
             } else {
                 return Ver1_r();
             }
+        }
+
+        int Ver3_r() {
+            rating = 0;
+            Color tmpColor = oppoColor(placingColor);
+            GameState* tmpGS;
+            bool atLeast1Crit = false;
+            int bestRating = (pick == _MAX ? -99999 : 99999);
+            int tmpRating;
+            int TLE_cnt = 0;
+            for (int aye = 0; aye < 5; aye++) {
+                for (int jay = 0; jay < 6; jay++) {
+                    if (color[aye][jay] == tmpColor) {
+                    	if (record[aye][jay] + 1 >= max[aye][jay]){
+							atLeast1Crit = true;
+							if (streakID[aye][jay] == 0) {
+								LabelCell(aye, jay);
+								streakCursor++;
+							}
+						}
+                    }
+                }
+            }
+
+            if (streakCursor > 1) {
+            	int maxid = 1;
+            	int maxcount = 1;
+            	
+
+            	for (int i = 1; i < streakCursor; i++) {
+            		if (streakCount[i] > maxcount) {
+            			maxcount = streakCount[i];
+            			maxid = i;
+            		}
+            	}
+
+	            for (int aye = 0; aye < 5; aye++) {
+	                for (int jay = 0; jay < 6; jay++) {
+	                    if (streakID[aye][jay] == maxid) {
+	                    	tmpGS = new GameState(record, max, color, ratingColor, oppoColor(placingColor), oppoPick(pick));
+	                    	tmpGS->PlaceOrb(aye, jay);
+                            tmpRating = tmpGS->Ver1_r();
+                            delete tmpGS;
+
+                            if (pick == _MAX) {
+                                if (tmpRating > bestRating) {
+                                    bestRating = tmpRating;
+                                }
+                            } else {
+                                if (tmpRating < bestRating) {
+                                    bestRating = tmpRating;
+                                }
+                            }
+	                    }
+	                }
+	            }
+
+            } else {
+            	return Ver1_r();
+            }
+
         }
 
         int Standard_r() {
@@ -873,7 +939,6 @@ int main(void) {
 
     return 0;
 }
-
 
 
 
